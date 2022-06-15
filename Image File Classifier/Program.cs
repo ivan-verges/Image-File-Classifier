@@ -1,30 +1,36 @@
-﻿scanBasePath(basePath: @"C:\Users\verge\Downloads\Test");
+﻿ScanPathFiles(basePath: "BASE_PATH", searchPattern: "*.*", searchOption: SearchOption.AllDirectories);
 
-void scanBasePath(string basePath, string searchPattern = "*.*")
+void ScanPathFiles(string basePath, string searchPattern = "*.*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
 {
-    if (string.IsNullOrEmpty(basePath))
+    if (string.IsNullOrEmpty(basePath) || !Directory.Exists(basePath))
     {
         return;
     }
 
-    string[] allfiles = Directory.GetFiles(basePath, searchPattern, SearchOption.AllDirectories);
-    foreach (string file in allfiles)
+    string[] matchingFilesPaths = Directory.GetFiles(basePath, searchPattern, searchOption);
+    foreach (string filePath in matchingFilesPaths)
     {
-        createFolderFromDate(file, File.GetCreationTime(file));
+        CreateDirectoryFromFile(filePath, true);
     }
 }
 
 
-void createFolderFromDate(string filePath, DateTime creationDate)
+void CreateDirectoryFromFile(string filePath, bool mergeHours)
 {
-    if (string.IsNullOrEmpty(filePath))
+    if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
     {
         return;
     }
 
     string[] weekDays = { "DOMINGO", "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO" };
-    string[] months = { "ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC" };
-    
+    string[] months = { "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE" };
+
+    DateTime creationDate = File.GetCreationTime(filePath);
+    if (creationDate.Hour >= 0 && creationDate.Hour <= 7 && mergeHours)
+    {
+        creationDate = creationDate.AddDays(-1);
+    }
+
     string folderName = "{0} {1} {2} {3}"
         .Replace("{0}", weekDays[(int)creationDate.DayOfWeek])
         .Replace("{1}", creationDate.ToString("dd"))
@@ -32,8 +38,8 @@ void createFolderFromDate(string filePath, DateTime creationDate)
         .Replace("{3}", creationDate.ToString("yyyy"));
 
     string fileName = Path.GetFileName(filePath);
-    string pathName = Path.GetFullPath(filePath).Replace(fileName, "");
-    string newPath = Path.Combine(pathName, folderName);
+    string pathName = Path.GetFullPath(filePath).Replace(fileName, string.Empty);
+    string newPath = (!pathName.Contains(folderName)) ? Path.Combine(pathName, folderName) : pathName;
 
     if (!Directory.Exists(newPath))
     {
@@ -42,10 +48,13 @@ void createFolderFromDate(string filePath, DateTime creationDate)
 
     newPath = Path.Combine(newPath, fileName);
 
-    moveFileToFolder(filePath, newPath);
+    MoveFile(filePath, newPath);
 }
 
-void moveFileToFolder(string sourceFile, string destinationFile)
+void MoveFile(string sourceFile, string destinationFile)
 {
-    File.Move(sourceFile, destinationFile);
+    if (!sourceFile.Equals(destinationFile))
+    {
+        File.Move(sourceFile, destinationFile);
+    }
 }
